@@ -1,0 +1,34 @@
+.satellite-list-scroll {
+  /* Ajusta la altura según tu diseño */
+  max-height: 300px;     
+  /* Permite scroll vertical y horizontal si son muchos satélites */
+  overflow-y: auto;
+  overflow-x: auto; 
+  margin-bottom: 1rem;  /* separa un poco del resto del contenido */
+}
+
+.sat-table {
+  /* Forzar ancho fijo de columnas y permitir truncar o scroll */
+  table-layout: fixed;  
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sat-table th,
+.sat-table td {
+  border: 1px solid #555;
+  padding: 0.5rem;
+  text-align: center;
+  /* Truncar texto si la columna se queda pequeña */
+  white-space: nowrap;  
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 80%;  /* Disminuye el tamaño del texto a la mitad */
+}
+
+/* Opcional: mantener fijo el header de la tabla al hacer scroll vertical */
+.sat-table thead th {
+  position: sticky; 
+  top: 0;
+  background: #3b3b50; /* color de fondo para el header */
+}

@@ -1,3 +1,6 @@
+/* App.css */
+
+/* Estilos globales */
 html, body, #root {
   margin: 0;
   padding: 0;
@@ -7,27 +10,28 @@ html, body, #root {
   background-color: #000011;
 }
 
-/* Layout general con flex horizontal */
+/* Layout general */
 .layout {
   display: flex;
-  /* flex-direction: row-reverse; */
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
-/* Panel IZQUIERDO → globo */
+/* Panel izquierdo → globo */
 .left-pane {
-  flex: 1;
+  flex: 0 0 60%;  /* Ajusta aquí el ancho deseado */
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* Panel DERECHO → barra lateral */
+/* Panel derecho → barra lateral */
 .right-pane {
-  width: 400px;
+  flex: 0 0 40%;  /* Ajusta a lo que prefieras */
+  min-width: 350px;
+  max-width: 500px;
   background: #2e2e3e;
   color: #fff;
   display: flex;
@@ -36,14 +40,13 @@ html, body, #root {
   overflow-y: auto;
 }
 
-/* Títulos */
+/* Otros estilos que ya tienes: títulos, paneles, etc. */
 .title {
   text-align: center;
   font-size: 1.8rem;
   margin-bottom: 1rem;
 }
 
-/* Panel con fondo gris */
 .panel {
   background: #3b3b50;
   margin-bottom: 1rem;
@@ -51,22 +54,17 @@ html, body, #root {
   border-radius: 8px;
 }
 
-/* Filtros */
-.filters {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+/* Estilos para la lista de satélites y el chat */
+.satellite-list-scroll {
+  max-height: 300px;
+  min-height: 200px;
+  overflow-y: auto;
+  overflow-x: auto;
+  margin-bottom: 1rem;
 }
 
-.filters input {
-  flex: 1;
-  padding: 0.3rem;
-  border: none;
-  border-radius: 4px;
-}
-
-/* Tabla satélites */
 .sat-table {
+  table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
 }
@@ -76,34 +74,29 @@ html, body, #root {
   border: 1px solid #555;
   padding: 0.5rem;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 80%;
 }
 
-/* Chat */
-.chat-log {
-  height: 150px;
-  background: #2b2b3b;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  overflow-y: auto;
+.sat-table thead th {
+  position: sticky;
+  top: 0;
+  background: #3b3b50;
 }
 
-.chat-input {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.chat-input input {
-  flex: 1;
-  padding: 0.3rem;
-  border: none;
-  border-radius: 4px;
-}
-
-.chat-input button {
-  padding: 0.4rem 0.8rem;
-  border: none;
-  background: #00aaff;
-  color: #fff;
-  border-radius: 4px;
-  cursor: pointer;
+/* Media Queries */
+@media screen and (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+  .left-pane {
+    width: 100%;
+    height: 60vh;
+  }
+  .right-pane {
+    width: 100%;
+    height: 40vh;
+  }
 }

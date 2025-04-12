@@ -1,3 +1,4 @@
+// hooks/useWebSocket.js
 import { useEffect, useRef } from "react";
 
 export function useWebSocket(onMessage) {
@@ -17,7 +18,24 @@ export function useWebSocket(onMessage) {
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        onMessage(data);
+
+        // Manejo por tipo de evento
+        switch (data.type) {
+          case "SATELLITE-STATUS":
+            // si en este tipo de evento esperas data.profile, lo validas:
+            if (!data.profile) {
+              console.warn("❌ Falta 'profile' en SATELLITE-STATUS:", data);
+              return;
+            }
+            // sí existe data.profile → disparas onMessage
+            onMessage(data);
+            break;
+
+          default:
+            // la mayoría de eventos no llevan "profile", no spameo la consola
+            onMessage(data);
+            break;
+        }
       } catch (error) {
         console.error("❌ Error al parsear JSON:", error);
       }
