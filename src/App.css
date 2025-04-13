@@ -36,6 +36,7 @@ html, body, #root {
   display: flex;
   justify-content: center;  /* Centra horizontalmente */
   align-items: center;      /* Centra verticalmente */
+  background: radial-gradient(circle at center, #0b0c1a 0%, #000011 100%);
   background-color: #000011;
   position: relative;
   overflow: hidden;
@@ -61,16 +62,19 @@ html, body, #root {
   text-align: start;
   font-size: 1.8rem;
   margin-bottom: 1rem;
+  color: #ffffff;
+  font-weight: bold;
 }
 
 .panel {
   background: #1c424d;
-  max-width: 80%;
-  max-height: 100%;
-  margin-bottom: 0.5rem;
+  max-width: 90%;
+  width: 100%;
+  margin: 0 auto 0.75rem auto;  /* centra dentro del pane y da espacio */
   padding: 1rem;
-  border-radius: 8px;
-  font-size: 80%;
+  border-radius: 10px;
+  font-size: 85%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 /* Estilo tabla */
@@ -80,6 +84,23 @@ html, body, #root {
   overflow-y: auto;
   overflow-x: visible;
   margin-bottom: 1rem;
+}
+
+.sat-table th,
+.sat-table td {
+  border: 1px solid #555;
+  padding: 0.4rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 90%;
+  color: #e6faff;
+}
+.sat-table thead th {
+  background-color: #2a5c68;
+  color: #fff;
+  font-weight: bold;
 }
 
 

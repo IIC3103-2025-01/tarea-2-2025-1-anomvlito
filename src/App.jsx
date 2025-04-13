@@ -32,6 +32,8 @@ const antenasDSN = [
 function App() {
   const [satellitesInfo, setSatellitesInfo] = useState({});
   const [showCoverageZones, setShowCoverageZones] = useState(true);
+  const [filtroPais, setFiltroPais] = useState("");
+  const [filtroMision, setFiltroMision] = useState("");
 
   useWebSocket((data) => {
     if (data.type === "POSITION_UPDATE") {
@@ -85,7 +87,7 @@ function App() {
     const consolidated = Object.values(satellitesInfo);
     if (consolidated.length === 0) return;
 
-    console.log("📡 Estado actual de los satélites:");
+    // console.log("📡 Estado actual de los satélites:");
     consolidated.forEach((sat) => {
       const resumen = {
         satellite_id: sat.satellite_id,
@@ -103,20 +105,41 @@ function App() {
         power: sat.power ?? "N/A",
         status: sat.status || "N/A",
       };
-      console.table(resumen);
+      // console.table(resumen);
     });
   }, [satellitesInfo]);
 
   const satellitesArray = Object.values(satellitesInfo);
   const dummySatellite = useDummySatellite(satellitesArray.length === 0);
+
+  const satelitesFiltrados = satellitesArray.filter((sat) => {
+    const codigoPais = sat?.organization?.country?.country_code || "";
+    const mision = sat?.mission || "";
+    return (
+      codigoPais.toLowerCase().includes(filtroPais.toLowerCase()) &&
+      mision.toLowerCase().includes(filtroMision.toLowerCase())
+    );
+  });
+
+
+
+
+
+
+
   const datosParaMostrar =
-    satellitesArray.length > 0 ? satellitesArray : dummySatellite ? [dummySatellite] : [];
+  satelitesFiltrados.length > 0 ? satelitesFiltrados : dummySatellite ? [dummySatellite] : [];
+
 
   return (
     <div className="layout">
       <div className="left-pane">
       <h1 className="title">Tarea 2: Houston, we have a problem</h1>
-        <SatelliteList satelites={datosParaMostrar} />
+      <SatelliteList
+          satelites={datosParaMostrar}
+          setFiltroPais={setFiltroPais}
+          setFiltroMision={setFiltroMision}
+        />
         <ChatPanel />
         
       </div>
