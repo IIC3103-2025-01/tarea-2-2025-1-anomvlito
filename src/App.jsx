@@ -1,7 +1,7 @@
 // App.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
-import { useDummySatellite } from "./hooks/useDummySatellite"; // Importa el hook dummy
+import { useDummySatellite } from "./hooks/useDummySatellite";
 import Globo from "./components/Globo";
 import SatelliteList from "./components/SatelliteList";
 import ChatPanel from "./components/Chat";
@@ -30,42 +30,114 @@ const antenasDSN = [
 ];
 
 function App() {
-  const [mensajes, setMensajes] = useState([]);
+  const [satellitesInfo, setSatellitesInfo] = useState({});
+  const [showCoverageZones, setShowCoverageZones] = useState(true);
 
-  // WebSocket: cuando llega "POSITION_UPDATE", se actualizan los mensajes
   useWebSocket((data) => {
     if (data.type === "POSITION_UPDATE") {
-      setMensajes(data.satellites);
-      console.log("📦 Data POSITION_UPDATE recibida:", data);
+      data.satellites.forEach((posData) => {
+        const position = {
+          ...posData.position,
+          lng: posData.position.long !== undefined ? posData.position.long : posData.position.lng,
+        };
+
+        setSatellitesInfo((prev) => {
+          const current = prev[posData.satellite_id] || {};
+          return {
+            ...prev,
+            [posData.satellite_id]: {
+              ...current,
+              ...Object.fromEntries(
+                Object.entries({
+                  ...posData,
+                  position,
+                }).map(([key, value]) => [
+                  key,
+                  value !== undefined && value !== null ? value : current[key],
+                ])
+              ),
+            },
+          };
+        });
+      });
+    } else if (data.type === "SATELLITES" || data.type === "SATELLITE-STATUS") {
+      let satDataArray = [];
+      if (data.type === "SATELLITES") {
+        satDataArray = data.satellites;
+      } else if (data.type === "SATELLITE-STATUS") {
+        satDataArray = [data.satellite];
+      }
+
+      satDataArray.forEach((sat) => {
+        setSatellitesInfo((prev) => ({
+          ...prev,
+          [sat.satellite_id]: {
+            ...prev[sat.satellite_id],
+            ...sat,
+          },
+        }));
+      });
     }
   });
 
-  // Preprocesamiento: si la propiedad se llama "long", renombrarla a "lng"
-  const satelitesValidos = mensajes
-    .filter(sat => sat.position && typeof sat.position.lat === 'number' && typeof sat.position.long === 'number')
-    .map(sat => ({
-      ...sat,
-      position: {
-        ...sat.position,
-        lng: sat.position.long,
-      },
-    }));
+  // LOG CONSOLIDADO DE SATÉLITES
+  useEffect(() => {
+    const consolidated = Object.values(satellitesInfo);
+    if (consolidated.length === 0) return;
 
-  // Utiliza el hook dummy solo si no hay datos reales
-  const dummySatellite = useDummySatellite(satelitesValidos.length === 0);
+    console.log("📡 Estado actual de los satélites:");
+    consolidated.forEach((sat) => {
+      const resumen = {
+        satellite_id: sat.satellite_id,
+        name: sat.name || "N/A",
+        launchsite_origin: sat.launchsite_origin || "N/A",
+        launch_date: sat.launch_date || "N/A",
+        position: sat.position || { lat: "N/A", lng: "N/A" },
+        altitude: sat.altitude ?? "N/A",
+        mission: sat.mission || "N/A",
+        organization: sat.organization?.name || "N/A",
+        country: sat.organization?.country?.name || "N/A",
+        type: sat.type || "N/A",
+        orbital_period: sat.orbital_period ?? "N/A",
+        lifespan: sat.lifespan ?? "N/A",
+        power: sat.power ?? "N/A",
+        status: sat.status || "N/A",
+      };
+      console.table(resumen);
+    });
+  }, [satellitesInfo]);
 
-  // Si hay satélites válidos, se usan; de lo contrario, usamos el dummy (si está definido)
-  const datosParaMostrar = satelitesValidos.length > 0 ? satelitesValidos : (dummySatellite ? [dummySatellite] : []);
+  const satellitesArray = Object.values(satellitesInfo);
+  const dummySatellite = useDummySatellite(satellitesArray.length === 0);
+  const datosParaMostrar =
+    satellitesArray.length > 0 ? satellitesArray : dummySatellite ? [dummySatellite] : [];
 
   return (
     <div className="layout">
       <div className="left-pane">
-        <Globo satelites={datosParaMostrar} antenas={antenasDSN} />
-      </div>
-      <div className="right-pane">
-        <h1 className="title">Tarea 2: Houston, we have a problem</h1>
+      <h1 className="title">Tarea 2: Houston, we have a problem</h1>
         <SatelliteList satelites={datosParaMostrar} />
         <ChatPanel />
+        
+      </div>
+      <div className="right-pane">
+      <Globo
+          satelites={datosParaMostrar}
+          antenas={antenasDSN}
+          showCoverageZones={showCoverageZones}
+        />
+        <button
+          onClick={() => setShowCoverageZones(!showCoverageZones)}
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            zIndex: 10,
+          }}
+        >
+          {showCoverageZones ? "Ocultar Zonas" : "Mostrar Zonas"}
+        </button>
+        
       </div>
     </div>
   );

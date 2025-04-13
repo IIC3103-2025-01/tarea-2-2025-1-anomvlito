@@ -25,7 +25,10 @@ function SatelliteList({ satelites }) {
 
       {/* Contenedor con scroll si hay muchos satélites */}
       <div className="satellite-list-scroll">
-        <table className="sat-table">
+      <table className="w-full table-fixed border-collapse text-sm">
+      <th className="border border-gray-600 p-1 bg-gray-700 sticky top-0" />
+      <td className="border border-gray-600 p-1 truncate" />
+
           <thead>
             <tr>
               <th>ID</th>
