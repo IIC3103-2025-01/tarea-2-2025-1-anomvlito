@@ -1,10 +1,18 @@
 import React from "react";
 
 // Helper simple para banderas
+
+
+
+
 function getFlagFromCountryCode(code) {
-  if (code === "US") return "🇺🇸";
-  if (code === "CL") return "🇨🇱";
-  if (code === "JP") return "🇯🇵";
+  if (code && code.length === 2) {
+    const codePoints = code
+      .toUpperCase()
+      .split('')
+      .map((char) => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+  }
   return "🏳️";
 }
 
