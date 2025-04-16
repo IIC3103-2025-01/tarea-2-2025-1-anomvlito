@@ -82,9 +82,9 @@ function Globo({ satelites = [], antenas = [], showCoverageZones = false }) {
         .pointsData(validAntenas)
         .pointLat(d => d.lat)
         .pointLng(d => d.lng)
-        .pointAltitude(() => 0.01) // Offset para que se sitúen por encima de la superficie
-        .pointColor(() => "orange")
-        .pointRadius(1);
+        .pointAltitude(() => 0.1) // Offset para que se sitúen por encima de la superficie
+        .pointColor(() => "yellow") // Color de las antenas
+        .pointRadius(0.25);
     }
   }, [antenas]);
 
@@ -115,10 +115,12 @@ function Globo({ satelites = [], antenas = [], showCoverageZones = false }) {
       .labelLng((d) => d.lng)
       .labelAltitude(() => 0.005) // Pequeño offset para no quedar embutido en la superficie
       .labelText(() => "") // Sin texto, solo el marker
-      .labelColor(() => "rgb(0, 247, 53)") // Naranja semi-transparente
+      .labelColor(() => "rgb(240, 168, 168)") // Naranja semi-transparente
+      .labelDotRadius(() => 0.5) // Radio del marcador
       .labelSize((d) => (d.power / 6371) * (180 / Math.PI))
       .labelDotRadius((d) => (d.power / 6371) * (180 / Math.PI))
       .labelResolution(2);
+
   }, [satelites, showCoverageZones]);
 
   // (Opcional) Si tienes otras capas personalizadas, podrías actualizarlas aquí

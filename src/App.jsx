@@ -1,4 +1,4 @@
-// App.jsx (Fusionado con useReducer)
+// App.jsx (Fusionado con useReducer y manejo de click en antena)
 import React, { useState, useEffect, useReducer, useCallback, useRef } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { useDummySatellite } from "./hooks/useDummySatellite"; // Mantenemos el dummy
@@ -6,40 +6,38 @@ import Globo from "./components/Globo";
 import SatelliteList from "./components/SatelliteList"; // Mantenemos SatelliteList
 import ChatPanel from "./components/Chat";             // Mantenemos ChatPanel
 import "./App.css";
+// Importar función de distancia si se usa una librería como Turf
+// import distance from '@turf/distance';
+// import { point } from '@turf/helpers';
 
-// --- Lógica del Reducer (Traída de App2.jsx) ---
+// --- Lógica del Reducer (Sin cambios) ---
 
 const initialReducerState = {
-  satellites: {}, // Objeto: { satellite_id: SatelliteData, ... }
-  satelliteIds: [], // Array de IDs para referencia si es necesario
+  satellites: {},
+  satelliteIds: [],
   isLoadingList: true,
   error: null,
 };
 
-// Tipos de acciones esenciales
 const Actions = {
   SET_LOADING_LIST: 'SET_LOADING_LIST',
   SET_ERROR: 'SET_ERROR',
   RECEIVE_SATELLITE_IDS: 'RECEIVE_SATELLITE_IDS',
-  UPDATE_SATELLITE_DATA: 'UPDATE_SATELLITE_DATA', // Para SATELLITE-STATUS y POSITION_UPDATE
+  UPDATE_SATELLITE_DATA: 'UPDATE_SATELLITE_DATA',
 };
 
-// El Reducer que ya funcionaba
 function satelliteReducer(state, action) {
-  // console.log("Reducer Action:", action.type, action.payload); // Descomentar para depurar
-
+  // console.log("Reducer Action:", action.type, action.payload);
   switch (action.type) {
     case Actions.SET_LOADING_LIST:
       return { ...state, isLoadingList: action.payload };
-
     case Actions.SET_ERROR:
       return { ...state, error: action.payload, isLoadingList: false };
-
     case Actions.RECEIVE_SATELLITE_IDS:
       const initialSatellites = { ...state.satellites };
       action.payload.forEach(id => {
         if (!initialSatellites[id]) {
-          initialSatellites[id] = { satellite_id: id, status: 'loading_details' }; // Placeholder
+          initialSatellites[id] = { satellite_id: id, status: 'loading_details' };
         }
       });
       return {
@@ -48,28 +46,22 @@ function satelliteReducer(state, action) {
         satellites: initialSatellites,
         isLoadingList: false,
       };
-
     case Actions.UPDATE_SATELLITE_DATA:
       const updateData = action.payload;
       const satIdToUpdate = updateData.satellite_id;
-
       if (!state.satellites[satIdToUpdate]) {
-         // console.warn(`Datos recibidos para satélite no listado inicialmente: ${satIdToUpdate}`);
-         // Podríamos decidir ignorarlo o añadirlo si es necesario
-         // Por ahora, lo fusionamos igual
+        // Podríamos añadirlo si no existe
       }
-
       return {
         ...state,
         satellites: {
           ...state.satellites,
           [satIdToUpdate]: {
             ...(state.satellites[satIdToUpdate] || { satellite_id: satIdToUpdate }),
-            ...updateData, // Fusionar datos
+            ...updateData,
           },
         },
       };
-
     default:
       return state;
   }
@@ -78,116 +70,132 @@ function satelliteReducer(state, action) {
 
 // --- Componente Principal App ---
 
-// Antenas DSN (se mantiene igual)
+// Antenas DSN
 const antenasDSN = [
   { id: "GDSCC", name: "Goldstone Deep Space Complex", lat: 35.4267, lng: -116.8900 },
   { id: "MDSCC", name: "Madrid Deep Space Complex", lat: 40.4314, lng: -4.2481 },
   { id: "CDSCC", name: "Canberra Deep Space Complex", lat: -35.4014, lng: 148.9817 },
 ];
 
-// Ya no necesitamos mergeSatelliteData, el reducer lo hace.
-// function mergeSatelliteData(prevData, newData) { ... }
 
 function App() {
-  // Reemplazamos useState por useReducer para los datos de satélites
   const [satState, dispatch] = useReducer(satelliteReducer, initialReducerState);
-
-  // Mantenemos los otros estados de la UI
-  const [showCoverageZones, setShowCoverageZones] = useState(true);
+  const [showCoverageZones, setShowCoverageZones] = useState(true); // Mantenido
   const [filtroPais, setFiltroPais] = useState("");
   const [filtroMision, setFiltroMision] = useState("");
 
-  // Ref para el WebSocket
+  // --- NUEVO ESTADO: Para la antena seleccionada y su info ---
+  const [selectedAntenna, setSelectedAntenna] = useState(null);
+  const [antennaInfo, setAntennaInfo] = useState(null); // Guardará { nearbySatellites: [], message: "..." }
+  // ---------------------------------------------------------
+
   const ws = useRef(null);
 
-  // --- Callbacks para WebSocket (Traídos de App2.jsx y adaptados) ---
-
+  // --- Callbacks para WebSocket (Sin cambios) ---
   const handleReady = useCallback((websocket) => {
     console.log("🔌 WebSocket conectado");
-    ws.current = websocket; // Guardar instancia
-
-    // 1. Autenticar
-    const authMessage = { type: "AUTH", name: "Fabian Ortega", student_number: "17627249" };
-    console.log("Enviando AUTH:", authMessage);
-    ws.current.send(JSON.stringify(authMessage));
-
-    // 2. Solicitar lista INICIAL de satélites
-    const requestSatellitesMessage = { type: "SATELLITES" };
-    console.log("Solicitando SATELLITES");
-    ws.current.send(JSON.stringify(requestSatellitesMessage));
-    dispatch({ type: Actions.SET_LOADING_LIST, payload: true });
-
-  }, []); // Sin dependencias, se crea una vez
+    ws.current = websocket;
+    if (ws.current.readyState === WebSocket.OPEN) {
+        const authMessage = { type: "AUTH", name: "Fabian Ortega", student_number: "17627249" };
+        console.log("Enviando AUTH:", authMessage);
+        ws.current.send(JSON.stringify(authMessage));
+        const requestSatellitesMessage = { type: "SATELLITES" };
+        console.log("Solicitando SATELLITES");
+        ws.current.send(JSON.stringify(requestSatellitesMessage));
+        dispatch({ type: Actions.SET_LOADING_LIST, payload: true });
+    } else {
+        console.warn("WebSocket no listo en handleReady");
+        // Podríamos intentar reenviar tras un delay si esto ocurre consistentemente
+    }
+  }, []); // No depende de dispatch si dispatch es estable
 
   const handleMessage = useCallback((data) => {
-    // console.log("📩 Mensaje recibido:", data.type);
     const currentWs = ws.current;
     if (!currentWs) return;
-
     try {
       switch (data.type) {
         case "SATELLITES":
           dispatch({ type: Actions.RECEIVE_SATELLITE_IDS, payload: data.satellites });
-          // Pedir detalles para CADA satélite recibido
           console.log(`Recibida lista de ${data.satellites.length} IDs. Solicitando detalles...`);
           data.satellites.forEach(satId => {
             const requestStatusMessage = { type: "SATELLITE-STATUS", satellite_id: satId };
             currentWs.send(JSON.stringify(requestStatusMessage));
           });
           break;
-
         case "SATELLITE-STATUS":
-          // Recibe detalles completos de UN satélite. Actualiza el estado.
           dispatch({ type: Actions.UPDATE_SATELLITE_DATA, payload: data.satellite });
           break;
-
         case "POSITION_UPDATE":
-            // Gestiona actualizaciones parciales (ej: solo posición)
             if (Array.isArray(data.satellites)) {
                 data.satellites.forEach(satUpdate => {
-                    // Preparamos los datos para asegurarnos que 'position' existe si hay lat/long
                     const position = satUpdate.position ? {
                         lat: satUpdate.position.lat,
-                        // Usamos 'long' si existe, si no 'lng'. El reducer fusionará.
                         long: satUpdate.position.long,
                         lng: satUpdate.position.lng,
                     } : undefined;
-
                     const payloadData = {
-                        ...satUpdate, // Incluye satellite_id y otros campos si los hay
-                        ...(position && { position }) // Añade el objeto position si existía
+                        ...satUpdate,
+                        ...(position && { position })
                     };
                     dispatch({ type: Actions.UPDATE_SATELLITE_DATA, payload: payloadData });
                 });
             }
             break;
-
-        // Ignoramos los demás tipos
         default:
-           // console.log(`Ignorando mensaje tipo: ${data.type}`);
           break;
       }
     } catch (error) {
       console.error("❌ Error procesando mensaje:", error);
       dispatch({ type: Actions.SET_ERROR, payload: "Error procesando mensaje del servidor." });
     }
-  }, []); // Sin dependencias de useCallback problemáticas
+  }, []); // No depende de dispatch si dispatch es estable
 
-  // --- Usar el hook WebSocket con los nuevos callbacks ---
   useWebSocket(handleReady, handleMessage);
 
+  // --- NUEVA FUNCIÓN: Callback para manejar click en antena ---
+  const handleAntennaSelect = useCallback((antennaData) => {
+    console.log("Antenna seleccionada en App:", antennaData);
+    setSelectedAntenna(antennaData); // Guardar la antena clickeada
 
-  // --- Procesamiento de Datos (Adaptado para usar satState) ---
+    // --- Lógica de Cálculo (PENDIENTE) ---
+    // Aquí es donde calcularías la distancia y la señal
+    const allSatellites = Object.values(satState.satellites);
+    let nearbySats = [];
+    // TODO: Implementar cálculo de distancia (Haversine o Turf.distance)
+    // const antennaCoords = point([antennaData.lng, antennaData.lat]);
 
-  // 1. Obtener array desde el estado del reducer
+    allSatellites.forEach(sat => {
+        if (sat?.position?.lat && sat.position?.lng && sat.power > 0) {
+            // const satCoords = point([sat.position.lng, sat.position.lat]);
+            // const distKm = distance(antennaCoords, satCoords, { units: 'kilometers' });
+            const distKm = 1000; // Placeholder distancia
+
+            if (distKm <= sat.power) {
+                const signal = Math.max(0, 1 - (distKm / sat.power));
+                nearbySats.push({
+                    id: sat.satellite_id,
+                    name: sat.name,
+                    distance: distKm,
+                    signal: (signal * 100).toFixed(1) + '%' // Formatear como porcentaje
+                });
+            }
+        }
+    });
+
+    console.log("Satélites cercanos calculados:", nearbySats); // Depuración
+    setAntennaInfo({ // Guardar resultados (incluso si están vacíos o son placeholder)
+        nearbySatellites: nearbySats,
+        message: nearbySats.length > 0 ? `Se encontraron ${nearbySats.length} satélites cercanos.` : "Ningún satélite cercano."
+    });
+    // --------------------------------------------------
+
+  }, [satState.satellites]); // Depende de los satélites para el cálculo
+  // -------------------------------------------------------
+
+  // --- Procesamiento de Datos (Sin cambios) ---
   const satellitesArray = Object.values(satState.satellites);
-
-  // 2. Usar el dummy satellite (igual que antes)
-  const dummySatellite = useDummySatellite(satellitesArray.length === 0 && satState.isLoadingList === false); // Mostrar dummy solo si no hay datos REALES y no estamos cargando
-
-  // 3. Filtrar por país y misión (igual que antes)
+  const dummySatellite = useDummySatellite(satellitesArray.length === 0 && satState.isLoadingList === false);
   const satelitesFiltrados = satellitesArray.filter((sat) => {
-    // Añadimos '?' para seguridad por si el objeto aún no está completo
     const codigoPais = sat?.organization?.country?.country_code || "";
     const mision = sat?.mission || "";
     return (
@@ -195,16 +203,11 @@ function App() {
       (filtroMision === "" || mision.toLowerCase().includes(filtroMision.toLowerCase()))
     );
   });
-
-  // 4. Decidir qué mostrar (filtrados o dummy)
-   const datosConDummy = satelitesFiltrados.length > 0 ? satelitesFiltrados : dummySatellite ? [dummySatellite] : [];
-
-  // 5. Preparar datos para Globo: asegurar 'position' y usar 'lng'
+  const datosConDummy = satelitesFiltrados.length > 0 ? satelitesFiltrados : dummySatellite ? [dummySatellite] : [];
   const datosParaMostrar = datosConDummy
-    .filter(s => s?.position?.lat !== undefined && (s.position?.lng !== undefined || s.position?.long !== undefined)) // Aceptar lng o long
+    .filter(s => s?.position?.lat !== undefined && (s.position?.lng !== undefined || s.position?.long !== undefined))
     .map(s => ({
       ...s,
-      // Crear/asegurar objeto position con lat y lng (preferido por Globo)
       position: {
         lat: s.position.lat,
         lng: s.position.long !== undefined ? s.position.long : s.position.lng
@@ -212,20 +215,16 @@ function App() {
     }));
 
 
-  // --- Renderizado (prácticamente igual que antes) ---
+  // --- Renderizado ---
   return (
     <div className="layout">
       <div className="left-pane">
         <h1 className="title">Tarea 2: Houston, we have a problem (con useReducer)</h1>
-        {/* Mostrar estado de carga/error si es útil */}
         {satState.isLoadingList && <p>Cargando lista inicial...</p>}
         {satState.error && <p className="error-message">Error: {satState.error}</p>}
 
         <SatelliteList
-          // Pasamos los satélites ya filtrados y preparados (aunque sin 'lng' asegurado aún, SatelliteList lo manejará?)
-          // O quizás es mejor pasar satelitesFiltrados aquí? Depende de qué espere SatelliteList.
-          // Asumamos que puede manejar ambos o que le pasamos los datos más crudos:
-          satelites={satelitesFiltrados} // Pasamos los filtrados antes de la transformación final para Globo
+          satelites={satelitesFiltrados}
           setFiltroPais={setFiltroPais}
           setFiltroMision={setFiltroMision}
         />
@@ -233,10 +232,12 @@ function App() {
       </div>
       <div className="right-pane">
         <Globo
-          // Pasamos los datos finales, filtrados, con dummy si aplica, y con position.lng asegurado
           satelites={datosParaMostrar}
           antenas={antenasDSN}
           showCoverageZones={showCoverageZones}
+          // --- Pasar el nuevo callback como prop ---
+          onAntennaClick={handleAntennaSelect}
+          // ---------------------------------------
         />
         <button
           onClick={() => setShowCoverageZones(!showCoverageZones)}
@@ -244,6 +245,35 @@ function App() {
         >
           {showCoverageZones ? "Ocultar Zonas" : "Mostrar Zonas"}
         </button>
+
+        {/* --- NUEVO PANEL: Para mostrar info de antena seleccionada --- */}
+        {selectedAntenna && (
+          <div className="info-panel antenna-info" style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(40,40,40,0.8)', color: 'white', padding: '10px', borderRadius: '5px', zIndex: 10, maxWidth: '300px', maxHeight: '300px', overflowY: 'auto' }}>
+            <h3>Antena: {selectedAntenna.name}</h3>
+            <p>ID: {selectedAntenna.id}</p>
+            <p>Pos: {selectedAntenna.lat?.toFixed(4)}, {selectedAntenna.lng?.toFixed(4)}</p>
+            {antennaInfo ? (
+              <>
+                <h4>Info Cobertura:</h4>
+                <p>{antennaInfo.message}</p>
+                {antennaInfo.nearbySatellites && antennaInfo.nearbySatellites.length > 0 && (
+                  <ul>
+                    {antennaInfo.nearbySatellites.map(sat => (
+                      <li key={sat.id}>
+                        {sat.name || sat.id}: {sat.signal} ({sat.distance.toFixed(0)} km)
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+                <p>Calculando información...</p>
+            )}
+            <button onClick={() => { setSelectedAntenna(null); setAntennaInfo(null); }} style={{marginTop: '5px', background: '#555', border: 'none', color: 'white', padding: '3px 6px', borderRadius: '3px', cursor: 'pointer'}}>Cerrar</button>
+          </div>
+        )}
+        {/* ---------------------------------------------------------- */}
+
       </div>
     </div>
   );
