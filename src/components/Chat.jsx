@@ -1,19 +1,41 @@
-import React from "react";
+// Chat.jsx
+import React, { useState } from "react";
 
-const Chat = () => {
+const Chat = ({ messages, onSendMessage }) => {
+  const [input, setInput] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    onSendMessage(input.trim());
+    setInput("");
+  };
+
   return (
-    <div className="panel">
+    <div className="panel chat-panel">
       <h2>Chat con Satélites</h2>
       <div className="chat-log">
-        {/* Aquí se mostrarían los mensajes; por ahora un mensaje dummy */}
-        <p>
-          <strong>NRO-002:</strong> Hello, Earth!
-        </p>
+        {messages.map(msg => (
+          <div
+            key={msg.id}
+            className={`chat-message ${msg.direction}`}
+            style={{ color: msg.level === 'warn' ? 'red' : 'inherit' }}
+          >
+            <span className="timestamp">
+              {msg.timestamp.toLocaleTimeString()}
+            </span>{" "}
+            <strong>{msg.sender}:</strong> {msg.content}
+          </div>
+        ))}
       </div>
-      <div className="chat-input">
-        <input type="text" placeholder="Escribe un mensaje..." />
-        <button>Enviar</button>
-      </div>
+      <form className="chat-input" onSubmit={handleSubmit}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Escribe un mensaje..."
+        />
+        <button type="submit">Enviar</button>
+      </form>
     </div>
   );
 };

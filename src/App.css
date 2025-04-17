@@ -118,4 +118,29 @@ html, body, #root {
   max-height: 100%;
   object-fit: contain;
 }
-*/
+
+
+
+/* chat styles */
+
+.panel.chat-panel {
+  max-width: 400px;
+  width: 100%;
+}
+.chat-message.incoming {
+  text-align: left;
+}
+.chat-message.outgoing {
+  text-align: right;
+}
+.chat-log {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 0.5rem;
+}
+.timestamp {
+  font-size: 0.75em;
+  color: #888;
+  margin-right: 4px;
+}
+
