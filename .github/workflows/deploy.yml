@@ -1,15 +1,14 @@
-# .github/workflows/deploy.yml
 name: Deploy static content to Pages
-
-# Evita que se acumulen jobs: sólo corre el último push
-concurrency:
-  group: 'pages'
-  cancel-in-progress: true
 
 on:
   push:
-    branches: ['main']
+    branches: [ main ]
   workflow_dispatch:
+
+# Solo un run activo en cola, cancela los anteriores
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -28,12 +27,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: npm
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build project
+      - name: Build
         run: npm run build
 
       - name: Configure GitHub Pages
